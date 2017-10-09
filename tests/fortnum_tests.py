@@ -1,7 +1,7 @@
 from collections import deque
 from unittest import TestCase
 
-from fortnum import Fortnum, FortnumMeta, DuplicatedFortnum, MultipleParents, class_property, FortnumRelation
+from fortnum import Fortnum, FortnumMeta, DuplicatedFortnum, MultipleParents, class_property, FortnumRelation, FortnumDescriptor
 
 
 class FortnumCase(TestCase):
@@ -222,5 +222,48 @@ class FortnumCase(TestCase):
         self.assertIn(Chemicals.water, PhysicalStates.liquid.chemicals)
         self.assertIn(Chemicals.air, PhysicalStates.gas.chemicals)
         self.assertNotIn(Chemicals.water, PhysicalStates.gas.chemicals)
+
+
+class DescriptorTestCase(TestCase):
+    def setUp(self):
+        FortnumMeta._registry = {}  # Allow redeclaration between tests
+
+        class Fruits(Fortnum):
+            Banana = Fortnum("Banana")
+            Tomato = Fortnum("Tomato")
+        self.Fruits = Fruits
+
+        class Plants(Fortnum):
+            Grass = Fortnum("Grass")
+            Banana = Fruits.Banana
+            Tomato = Fruits.Tomato
+        self.Plants = Plants
+
+        class Obj:
+            fruit = FortnumDescriptor("fruits", Fruits, default=Fruits.Banana, allow_none=False)
+            plant = FortnumDescriptor("plants", Plants, allow_none=False)
+
+        self.o = Obj()
+
+    def test_default(self):
+        self.assertEqual(self.o.fruit, self.Fruits.Banana)
+        self.o.fruit = self.Fruits.Tomato
+        self.assertEqual(self.o.fruit, self.Fruits.Tomato)
+
+    def test_none_not_allowed(self):
+        with self.assertRaises(ValueError):
+            self.o.plant = None
+
+    def test_illegal_value(self):
+        for value in (
+            self.Plants.Grass,
+            {},
+            1,
+            False,
+            True
+        ):
+            with self.assertRaises(ValueError):
+                self.o.fruit = value
+
 
 

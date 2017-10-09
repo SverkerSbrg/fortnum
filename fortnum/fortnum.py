@@ -1,4 +1,5 @@
 from collections import OrderedDict, Sized
+from weakref import WeakKeyDictionary
 
 
 class FortnumException(Exception):
@@ -145,3 +146,34 @@ class Fortnum(metaclass=FortnumMeta):
             return cls.parents[0]
 
         raise MultipleParents
+
+
+class FortnumDescriptor:
+    def __init__(self, attr, fortnum, default=None, allow_none=False):
+        self.values = WeakKeyDictionary()
+        self.attr = attr
+        self.fortnum = fortnum
+        self.default = default
+        self.allow_none = allow_none
+
+    def __set__(self, instance, value):
+        if value is None:
+            if not self.allow_none and not self.default:
+                raise ValueError("None not allowed.")
+
+            if instance in self.values:
+                del self.values[instance]
+
+        else:
+            if value not in self.fortnum:
+                raise ValueError("'%s' is not a valid option for '%s'. Try %s" % (
+                    value,
+                    self.attr,
+                    list(self.fortnum)
+                ))
+            self.values[instance] = value
+
+    def __get__(self, instance, owner):
+        if instance in self.values:
+            return self.values[instance]
+        return self.default
