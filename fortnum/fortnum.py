@@ -1,6 +1,8 @@
 from collections import OrderedDict, Sized
 from weakref import WeakKeyDictionary
 
+from fortnum.utils import OrderedSet
+
 
 class FortnumException(Exception):
     pass
@@ -44,6 +46,11 @@ class FortnumMeta(type):
         fortnum = type.__new__(mcs, name, bases, dict(classdict))
         mcs._registry[name] = fortnum
 
+        # Initialize fortnum attributes
+        fortnum.parent = None
+        fortnum.parents = OrderedSet()
+        fortnum.parent_index = {}
+
         # Identify children and register parent connections
         if fortnum.item_class:
             fortnum.children = OrderedDict((
@@ -53,9 +60,11 @@ class FortnumMeta(type):
             )
 
             for index, child in enumerate(fortnum.children.values()):
-                if child.parents is None:
-                    child.parents = []
-                child.parents.append(fortnum)
+                if child.parent is None:
+                    child.parent = fortnum
+                child.parents.add(fortnum)
+                child.parent_index[fortnum] = index
+
         else:
             fortnum.children = OrderedDict()
 
@@ -116,10 +125,29 @@ class FortnumMeta(type):
     def choices(self):
         return ((str(item), str(item)) for item in self.__iter__())
 
+    def common_parent(self, other):
+        if not issubclass(other, Fortnum):
+            return TypeError("Fortnums can only be compared with other fortnums. other is of type '%s'" % type(other))
+
+        try:
+            return next(iter(self.parents & other.parents))
+
+        except StopIteration:
+            raise TypeError("Only fortnums with atleast one common parent can be compared.")
+
+    def __gt__(self, other):
+        parent = self.common_parent(other)
+        return self.parent_index[parent].__gt__(other.parent_index[parent])
+
+    def __lt__(self, other):
+        parent = self.common_parent(other)
+        return self.parent_index[parent].__lt__(other.parent_index[parent])
+
 
 class Fortnum(metaclass=FortnumMeta):
     parents = None  # Set by Metaclass
     children = None  # Set by Metaclass
+    parent_index = None  # Set by Metaclass
     item_class = FortnumMeta
 
     def __new__(cls, name, **kwargs):
@@ -136,16 +164,6 @@ class Fortnum(metaclass=FortnumMeta):
     @classmethod
     def deserialize(cls, name):
         return FortnumMeta.deserialize(cls, name)
-
-    @class_property
-    def parent(cls):
-        if not cls.parents:
-            return None
-
-        if len(cls.parents) == 1:
-            return cls.parents[0]
-
-        raise MultipleParents
 
 
 class FortnumDescriptor:
