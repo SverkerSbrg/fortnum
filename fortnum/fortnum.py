@@ -68,8 +68,8 @@ class FortnumMeta(type):
         else:
             fortnum.children = OrderedDict()
 
-        # Find relations defined on base classes and add them to the objects.
         for base in bases:
+            # Find relations defined on base classes and add them to the objects.
             for key, relation in (
                     (key, relation)
                     for key, relation
@@ -83,6 +83,10 @@ class FortnumMeta(type):
                         if not hasattr(related_fortnum, relation.related_name):
                             setattr(related_fortnum, relation.related_name, set())
                         getattr(related_fortnum, relation.related_name).add(fortnum)
+
+            # Register subclasses
+            if base is isinstance(base, FortnumMeta):
+                pass
 
         return fortnum
 
@@ -145,6 +149,7 @@ class FortnumMeta(type):
 
 
 class Fortnum(metaclass=FortnumMeta):
+    parent = None  # Set by Metaclass
     parents = None  # Set by Metaclass
     children = None  # Set by Metaclass
     parent_index = None  # Set by Metaclass
@@ -155,7 +160,7 @@ class Fortnum(metaclass=FortnumMeta):
         try:
             return Fortnum.deserialize(name)
         except FortnumDoesNotExist:
-            return FortnumMeta(name, (Fortnum,), kwargs)
+            return FortnumMeta(name, (cls,), kwargs)
 
     @classmethod
     def serialize(cls):
@@ -163,7 +168,18 @@ class Fortnum(metaclass=FortnumMeta):
 
     @classmethod
     def deserialize(cls, name):
-        return FortnumMeta.deserialize(cls, name)
+        fortnum = FortnumMeta.deserialize(cls, name)
+        if fortnum not in cls:
+            raise FortnumDoesNotExist("'%s' is not a valid option for '%s'. Try %s" % (
+                name,
+                cls,
+                list(cls)
+            ))
+        return fortnum
+
+    @class_property
+    def subclasses(cls):
+        return cls.__subclasses__()
 
 
 class FortnumDescriptor:

@@ -283,6 +283,7 @@ class FortnumCase(TestCase):
 class DescriptorTestCase(TestCase):
     def setUp(self):
         FortnumMeta._registry = {}  # Allow redeclaration between tests
+        # clear_registries(Fortnum)
 
         class Fruits(Fortnum):
             Banana = Fortnum("Banana")
