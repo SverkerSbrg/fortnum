@@ -39,6 +39,11 @@ class FortnumMeta(type):
         return OrderedDict()
 
     def __new__(mcs, name, bases, classdict):
+        # Allow name override when using class declaration by explicitly providing a "__name__"
+        # if "asdf" in classdict:
+        #     print(classdict["asdf"])
+        #     name = classdict["asdf"]
+
         if name in mcs._registry:
             raise DuplicatedFortnum()
 
@@ -103,15 +108,6 @@ class FortnumMeta(type):
     def __bool__(self):
         return True
 
-    def serialize(cls):
-        return cls.__name__
-
-    def deserialize(cls, name):
-        try:
-            return cls._registry[name]
-        except KeyError:
-            raise FortnumDoesNotExist()
-
     def descendants(cls):
         for child in cls:
             yield child
@@ -148,6 +144,17 @@ class FortnumMeta(type):
         return self.parent_index[parent].__lt__(other.parent_index[parent])
 
 
+def serialize_fortnum(fortnum):
+    return fortnum.__name__
+
+
+def deserialize_fortnum(name):
+    try:
+        return FortnumMeta._registry[name]
+    except KeyError:
+        raise FortnumDoesNotExist()
+
+
 class Fortnum(metaclass=FortnumMeta):
     parent = None  # Set by Metaclass
     parents = None  # Set by Metaclass
@@ -158,17 +165,17 @@ class Fortnum(metaclass=FortnumMeta):
     def __new__(cls, name, **kwargs):
         # Allow fetching of already defined fortnums.
         try:
-            return Fortnum.deserialize(name)
+            return deserialize_fortnum(name)
         except FortnumDoesNotExist:
             return FortnumMeta(name, (cls,), kwargs)
 
     @classmethod
     def serialize(cls):
-        return cls.__name__
+        return serialize_fortnum(cls)
 
     @classmethod
     def deserialize(cls, name):
-        fortnum = FortnumMeta.deserialize(cls, name)
+        fortnum = deserialize_fortnum(name)
         if fortnum not in cls:
             raise FortnumDoesNotExist("'%s' is not a valid option for '%s'. Try %s" % (
                 name,

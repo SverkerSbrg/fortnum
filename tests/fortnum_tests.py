@@ -1,7 +1,8 @@
 from collections import deque
 from unittest import TestCase
 
-from fortnum import Fortnum, FortnumMeta, DuplicatedFortnum, MultipleParents, class_property, FortnumRelation, FortnumDescriptor
+from fortnum import Fortnum, DuplicatedFortnum, MultipleParents, class_property, FortnumRelation, FortnumDescriptor
+from fortnum.fortnum import FortnumMeta, deserialize_fortnum
 
 
 class FortnumCase(TestCase):
@@ -56,8 +57,7 @@ class FortnumCase(TestCase):
             pass
 
         self.assertEqual(Fortnum1.serialize(), "Fortnum1")
-        self.assertEqual(Fortnum.deserialize(Fortnum1.serialize()), Fortnum1)
-        self.assertEqual(Fortnum1.deserialize(Fortnum1.serialize()), Fortnum1)
+        self.assertEqual(deserialize_fortnum(Fortnum1.serialize()), Fortnum1)
 
     def testDuplicatedFortnum(self):
         class Fortnum1(Fortnum):
@@ -90,18 +90,6 @@ class FortnumCase(TestCase):
         self.assertEqual(Parent.child2.parent, Parent)
         self.assertEqual(Child1.parent.parent, GrandParent)
 
-    # def testMultipleParents(self):
-    #     class Child(Fortnum):
-    #         pass
-    #
-    #     class Parent(Fortnum):
-    #         child = Child
-    #
-    #     class SecondParent(Fortnum):
-    #         child = Child
-    #
-    #     with self.assertRaises(MultipleParents):
-    #         parent = Child.parent
 
     # Fortnums can only have one parent and are thus not inherited when the class is extended
     # TODO: review. It is an odd behaviour that the members tag along but are neither "in" nor appears in itteration
