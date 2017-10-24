@@ -267,6 +267,66 @@ class FortnumCase(TestCase):
         with self.assertRaises(TypeError):
             Parent2.child4 > Parent1.child1
 
+    def test_root(self):
+        class GrandParent(Fortnum):
+            class Parent1(Fortnum):
+                Child1 = Fortnum("Child1")
+                Child2 = Fortnum("Child2")
+
+        self.assertEqual(GrandParent.Parent1.Child1.root(), GrandParent)
+
+    def test_root_root(self):
+        class Root(Fortnum):
+            Child = Fortnum("Child")
+
+        self.assertEqual(Root.root(), Root)
+
+    def test_ancestors(self):
+        child = Fortnum("Child")
+
+        class GrandParent(Fortnum):
+            class Parent(Fortnum):
+                Child = child
+
+        self.assertEqual(list(child.ancestors()), [GrandParent, GrandParent.Parent])
+
+    def test_ancestors_include_self(self):
+        child = Fortnum("Child")
+
+        class GrandParent(Fortnum):
+            class Parent(Fortnum):
+                Child = child
+
+        self.assertEqual(list(child.ancestors(include_self=True)), [GrandParent, GrandParent.Parent, child])
+
+    def test_ancestors_acending(self):
+        child = Fortnum("Child")
+
+        class GrandParent(Fortnum):
+            class Parent(Fortnum):
+                Child = child
+
+        self.assertEqual(list(child.ancestors(ascending=True)), [GrandParent.Parent, GrandParent])
+
+    def test_family(self):
+        child1 = Fortnum("Child1")
+        child2 = Fortnum("Child2")
+
+        class GrandParent(Fortnum):
+            class Parent(Fortnum):
+                Child1 = child1
+                Child2 = child2
+
+        self.assertEqual(
+            list(GrandParent.Parent.family()),
+            [
+                GrandParent,
+                GrandParent.Parent,
+                child1,
+                child2
+            ]
+        )
+
 
 class DescriptorTestCase(TestCase):
     def setUp(self):

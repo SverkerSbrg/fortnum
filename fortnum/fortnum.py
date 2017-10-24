@@ -89,10 +89,6 @@ class FortnumMeta(type):
                             setattr(related_fortnum, relation.related_name, set())
                         getattr(related_fortnum, relation.related_name).add(fortnum)
 
-            # Register subclasses
-            if base is isinstance(base, FortnumMeta):
-                pass
-
         return fortnum
 
     def __iter__(self):
@@ -107,13 +103,6 @@ class FortnumMeta(type):
 
     def __bool__(self):
         return True
-
-    def descendants(cls):
-        for child in cls:
-            yield child
-
-            for descendant in child.descendants():
-                yield descendant
 
     def __str__(self):
         return self.__name__
@@ -187,6 +176,59 @@ class Fortnum(metaclass=FortnumMeta):
     @class_property
     def subclasses(cls):
         return cls.__subclasses__()
+
+    @class_property
+    def parent(cls):
+        if not cls.parents:
+            return None
+
+        if len(cls.parents) == 1:
+            return cls.parents[0]
+
+        raise MultipleParents
+
+    @classmethod
+    def descendants(cls, include_self=False):
+        if include_self:
+            yield cls
+
+        for child in cls:
+            yield child
+
+            for descendant in child.descendants():
+                yield descendant
+
+    @classmethod
+    def root(cls):
+        root = cls
+        while root.parent:
+            root = root.parent
+        return root
+
+    @classmethod
+    def ancestors(cls, ascending=False, include_self=False):
+        ancestors = []
+        if include_self:
+            ancestors.append(cls)
+        parent = cls
+        while parent.parent:
+            parent = parent.parent
+            ancestors.append(parent)
+
+        if not ascending:
+            ancestors = ancestors[::-1]
+
+        return ancestors
+
+    @classmethod
+    def family(cls):
+        for ancestor in cls.ancestors():
+            yield ancestor
+
+        yield cls
+
+        for descendant in cls.descendants():
+            yield descendant
 
 
 class FortnumDescriptor:
