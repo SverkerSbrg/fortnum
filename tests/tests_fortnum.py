@@ -1,8 +1,8 @@
 from collections import deque
 from unittest import TestCase
 
-from fortnum import Fortnum, DuplicatedFortnum, MultipleParents, class_property, FortnumRelation, FortnumDescriptor
-from fortnum.fortnum import FortnumMeta, deserialize_fortnum
+from fortnum import Fortnum, DuplicatedFortnum, class_property, FortnumDescriptor
+from fortnum.fortnum import FortnumMeta, deserialize_fortnum, UnableToAddRelatedFortnum
 
 
 class FortnumCase(TestCase):
@@ -157,40 +157,19 @@ class FortnumCase(TestCase):
 
         self.assertTrue(type(Fortnum1.fun_name) == str)
 
-    def test_fortnum_item_class_none(self):
-        class PhysicalStates(Fortnum):
-            liquid = Fortnum("Liquid")
-            gas = Fortnum("Gas")
-            solid = Fortnum("Solid")
-
-        class Chemical(Fortnum):
-            item_class = None
-            physical_state = None
-            name = None
-
-        class Chemicals(Fortnum):
-            class water(Chemical):
-                physical_state = PhysicalStates.liquid
-                name = "Vatten"
-
-            class air(Chemical):
-                physical_state = PhysicalStates.gas
-                name = "Luft"
-
-        self.assertEqual(PhysicalStates.liquid, Chemicals.water.physical_state)
-        self.assertEqual(0, len(Chemicals.water))
-        self.assertNotIn(PhysicalStates.gas, Chemicals.air)
-
     def test_fortnum_relation(self):
+        class PhysicalState(Fortnum):
+            chemicals = None
+
         class PhysicalStates(Fortnum):
-            liquid = Fortnum("Liquid")
-            gas = Fortnum("Gas")
-            solid = Fortnum("Solid")
+            item_class = PhysicalState
+
+            liquid = PhysicalState("Liquid")
+            gas = PhysicalState("Gas")
+            solid = PhysicalState("Solid")
 
         class Chemical(Fortnum):
-            item_class = None
-            physical_state = FortnumRelation("chemicals")
-            name = None
+            related_name = "chemicals"
 
         class Chemicals(Fortnum):
             class water(Chemical):
@@ -210,6 +189,26 @@ class FortnumCase(TestCase):
         self.assertIn(Chemicals.water, PhysicalStates.liquid.chemicals)
         self.assertIn(Chemicals.air, PhysicalStates.gas.chemicals)
         self.assertNotIn(Chemicals.water, PhysicalStates.gas.chemicals)
+
+    def test_unable_to_set_relation(self):
+        class PhysicalState(Fortnum):
+            chemicals = "not a FortnumRelation"
+
+        class PhysicalStates(Fortnum):
+            item_class = PhysicalState
+
+            liquid = PhysicalState("Liquid")
+            gas = PhysicalState("Gas")
+            solid = PhysicalState("Solid")
+
+        class Chemical(Fortnum):
+            related_name = "chemicals"
+
+        with self.assertRaises(UnableToAddRelatedFortnum):
+            class Chemicals(Fortnum):
+                class water(Chemical):
+                    physical_state = PhysicalStates.liquid
+                    name = "Vatten"
 
     def test_sorting(self):
         class Parent(Fortnum):
@@ -326,6 +325,24 @@ class FortnumCase(TestCase):
                 child2
             ]
         )
+
+    def test_item_class(self):
+        class Chemical(Fortnum):
+            pass
+
+        class Water(Chemical):
+            pass
+
+        _oil = Chemical("oil")
+
+        class Chemicals(Fortnum):
+            item_class = Chemical
+
+            water = Water
+            oil = _oil
+            not_a_chemical = Fortnum("not_a_chemical")
+
+        self.assertEqual(list(Chemicals), [Chemicals.water, Chemicals.oil])
 
 
 class DescriptorTestCase(TestCase):
