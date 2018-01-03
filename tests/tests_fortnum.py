@@ -1,32 +1,13 @@
 from collections import deque
 from unittest import TestCase
 
-from fortnum import Fortnum, DuplicatedFortnum, class_property, FortnumDescriptor
-from fortnum.fortnum import FortnumMeta, deserialize_fortnum, UnableToAddRelatedFortnum
+from fortnum import Fortnum, class_property, FortnumDescriptor
+from fortnum.fortnum import FortnumMeta, UnableToAddRelatedFortnum
 
 
 class FortnumCase(TestCase):
     def setUp(self):
         FortnumMeta._registry = {}  # Allow redeclaration between tests
-
-    def testNotEqual(self):
-        class Fortnum1(Fortnum):
-            pass
-
-        class Fortnum2(Fortnum):
-            pass
-
-        Fortnum3 = Fortnum("Fortnum3")
-
-        self.assertNotEqual(Fortnum1, Fortnum2)
-        self.assertNotEqual(Fortnum1, Fortnum3)
-        self.assertNotEqual(Fortnum1, "Fortnum1")
-
-    def testEqual(self):
-        class Fortnum1(Fortnum):
-            pass
-
-        self.assertEqual(Fortnum1, Fortnum("Fortnum1"))
 
     def testIn(self):
         child3 = Fortnum
@@ -52,29 +33,6 @@ class FortnumCase(TestCase):
         self.assertNotEqual(d[Fortnum2], Fortnum1)
         self.assertNotIn("Fortnum1", d)
 
-    def testSerialize(self):
-        class Fortnum1(Fortnum):
-            pass
-
-        self.assertEqual(Fortnum1.serialize(), "Fortnum1")
-        self.assertEqual(deserialize_fortnum(Fortnum1.serialize()), Fortnum1)
-
-    def testDuplicatedFortnum(self):
-        class Fortnum1(Fortnum):
-            pass
-
-        with self.assertRaises(DuplicatedFortnum):
-            class Fortnum1(Fortnum):
-                pass
-
-    def testFetchByInit(self):
-        class Fortnum1(Fortnum):
-            pass
-
-        fortnum1 = Fortnum("Fortnum1")
-
-        self.assertEqual(fortnum1, Fortnum1)
-
     def testParent(self):
         class Child1(Fortnum):
             pass
@@ -84,7 +42,7 @@ class FortnumCase(TestCase):
             child2 = Fortnum("Child2")
 
         class GrandParent(Fortnum):
-            parent = Fortnum("Parent")  # Fetch by init
+            parent = Parent
 
         self.assertEqual(Child1.parent, Parent)
         self.assertEqual(Parent.child2.parent, Parent)

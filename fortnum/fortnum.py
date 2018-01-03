@@ -8,10 +8,6 @@ class FortnumException(Exception):
     pass
 
 
-class DuplicatedFortnum(FortnumException):
-    pass
-
-
 class FortnumDoesNotExist(FortnumException):
     pass
 
@@ -37,12 +33,12 @@ class FortnumMeta(type):
         return OrderedDict()
 
     def __new__(mcs, name, bases, classdict):
-        if name in mcs._registry:
-            raise DuplicatedFortnum()
+        # if name in mcs._registry:
+        #     raise DuplicatedFortnum()
 
         # Create Fortnum class and add to registry
         fortnum = type.__new__(mcs, name, bases, dict(classdict))
-        mcs._registry[name] = fortnum
+        # mcs._registry[name] = fortnum
 
         # Initialize fortnum attributes
         fortnum.parent = None
@@ -123,15 +119,15 @@ class FortnumMeta(type):
         return self.parent_index[parent].__lt__(other.parent_index[parent])
 
 
-def serialize_fortnum(fortnum):
-    return fortnum.__name__
-
-
-def deserialize_fortnum(name):
-    try:
-        return FortnumMeta._registry[name]
-    except KeyError:
-        raise FortnumDoesNotExist()
+# def serialize_fortnum(fortnum):
+#     return fortnum.__name__
+#
+#
+# def deserialize_fortnum(name):
+#     try:
+#         return FortnumMeta._registry[name]
+#     except KeyError:
+#         raise FortnumDoesNotExist()
 
 
 class Fortnum(metaclass=FortnumMeta):
@@ -143,26 +139,26 @@ class Fortnum(metaclass=FortnumMeta):
     related_name = None
 
     def __new__(cls, name, **kwargs):
-        # Allow fetching of already defined fortnums.
-        try:
-            return deserialize_fortnum(name)
-        except FortnumDoesNotExist:
-            return FortnumMeta(name, (cls,), kwargs)
+    #     # Allow fetching of already defined fortnums.
+    #     try:
+    #         return deserialize_fortnum(name)
+    #     except FortnumDoesNotExist:
+        return FortnumMeta(name, (cls,), kwargs)
 
     @classmethod
     def serialize(cls):
-        return serialize_fortnum(cls)
+        return cls.__name__
 
     @classmethod
     def deserialize(cls, name):
-        fortnum = deserialize_fortnum(name)
-        if fortnum not in cls:
+        try:
+            return {fortnum.name: fortnum for fortnum in cls}[name]
+        except KeyError:
             raise FortnumDoesNotExist("'%s' is not a valid option for '%s'. Try %s" % (
                 name,
                 cls,
                 list(cls)
             ))
-        return fortnum
 
     @class_property
     def subclasses(cls):
