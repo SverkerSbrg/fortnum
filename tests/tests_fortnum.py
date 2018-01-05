@@ -302,6 +302,27 @@ class FortnumCase(TestCase):
 
         self.assertEqual(list(Chemicals), [Chemicals.water, Chemicals.oil])
 
+    def test_not_abstract(self):
+        class Foo(Fortnum):
+            pass
+
+        self.assertFalse(Foo.abstract)
+
+    def test_abstract(self):
+        class AbstractFoo(Fortnum):
+            abstract = True
+
+        self.assertTrue(AbstractFoo.abstract)
+
+    def test_do_not_inherit_abstract(self):
+        class AbstractParent(Fortnum):
+            abstract = True
+
+        class NotAbstractChild(AbstractParent):
+            pass
+
+        self.assertFalse(NotAbstractChild.abstract)
+
 
 class DescriptorTestCase(TestCase):
     def setUp(self):

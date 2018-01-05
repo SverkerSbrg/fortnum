@@ -33,12 +33,12 @@ class FortnumMeta(type):
         return OrderedDict()
 
     def __new__(mcs, name, bases, classdict):
-        # if name in mcs._registry:
-        #     raise DuplicatedFortnum()
-
         # Create Fortnum class and add to registry
         fortnum = type.__new__(mcs, name, bases, dict(classdict))
-        # mcs._registry[name] = fortnum
+
+        # Do not inherit abstract attribute
+        if "abstract" not in classdict:
+            fortnum.abstract = False
 
         # Initialize fortnum attributes
         fortnum.parent = None
@@ -135,6 +135,7 @@ class Fortnum(metaclass=FortnumMeta):
     parents = None  # Set by Metaclass
     children = None  # Set by Metaclass
     parent_index = None  # Set by Metaclass
+    abstract = None  # Set by Metaclass
     item_class = None
     related_name = None
 
