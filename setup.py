@@ -10,7 +10,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='fortnum',
-    version='0.0.7',
+    version='0.0.8',
     description='Singletons using class syntax',
     # long_description=io.open('README.rst', encoding='utf-8').read() + '\n\n' +
     #     io.open('HISTORY.rst', encoding='utf-8').read(),
