@@ -25,6 +25,29 @@ class class_property(classmethod):
         return super().__get__(instance, owner)()
 
 
+class FortnumRelation(list):
+    def __init__(self, *fortnums, related_name=None):
+        super(FortnumRelation, self).__init__(fortnums)
+        self.related_name=related_name
+
+
+def register_related_fortnum(fortnum, related_name, target_fortnum):
+    if not related_name:
+        return
+
+    related_fortnums = getattr(target_fortnum, related_name, None)
+    if related_fortnums is None or related_fortnums == []:
+        related_fortnums = RelatedFortnums()
+        setattr(target_fortnum, related_name, related_fortnums)
+    elif not isinstance(related_fortnums, RelatedFortnums):
+        raise UnableToAddRelatedFortnum(
+            "Unable to add related fortnums to '%s' attribute '%s' it would override the value '%s'." %
+            (target_fortnum, related_name, related_fortnums)
+        )
+
+    related_fortnums.add(fortnum)
+
+
 class FortnumMeta(type):
     _registry = {}
 
@@ -52,23 +75,18 @@ class FortnumMeta(type):
         for key, value in classdict.items():
             if issubclass(type(value), FortnumMeta):
                 # Create related fortnum sets
-                if related_name:
-                    related_fortnums = getattr(value, related_name, None)
-                    if related_fortnums is None:
-                        related_fortnums = RelatedFortnums()
-                    elif not isinstance(related_fortnums, RelatedFortnums):
-                        raise UnableToAddRelatedFortnum(
-                            "Unable to add related fortnums to '%s' attribute '%s' it would override the value '%s'." %
-                            (value, related_name, related_fortnums)
-                        )
-                    related_fortnums.add(fortnum)
-                    setattr(value, related_name, related_fortnums)
+                register_related_fortnum(fortnum, related_name, value)
 
                 # Add children
                 if item_class and not issubclass(value, item_class) or key == "item_class":
                     continue
                 fortnum.children[key] = value
 
+            if isinstance(value, FortnumRelation):
+                for target_fortnum in value:
+                    register_related_fortnum(fortnum, value.related_name or related_name, target_fortnum)
+
+        # Add parent index
         for index, child in enumerate(fortnum.children.values()):
             if child.parent is None:
                 child.parent = fortnum
@@ -119,17 +137,6 @@ class FortnumMeta(type):
         return self.parent_index[parent].__lt__(other.parent_index[parent])
 
 
-# def serialize_fortnum(fortnum):
-#     return fortnum.__name__
-#
-#
-# def deserialize_fortnum(name):
-#     try:
-#         return FortnumMeta._registry[name]
-#     except KeyError:
-#         raise FortnumDoesNotExist()
-
-
 class Fortnum(metaclass=FortnumMeta):
     parent = None  # Set by Metaclass
     parents = None  # Set by Metaclass
@@ -140,10 +147,6 @@ class Fortnum(metaclass=FortnumMeta):
     related_name = None
 
     def __new__(cls, name, **kwargs):
-    #     # Allow fetching of already defined fortnums.
-    #     try:
-    #         return deserialize_fortnum(name)
-    #     except FortnumDoesNotExist:
         return FortnumMeta(name, (cls,), kwargs)
 
     @classmethod

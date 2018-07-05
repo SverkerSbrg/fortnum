@@ -2,7 +2,7 @@ from collections import deque
 from unittest import TestCase
 
 from fortnum import Fortnum, class_property, FortnumDescriptor
-from fortnum.fortnum import FortnumMeta, UnableToAddRelatedFortnum
+from fortnum.fortnum import FortnumMeta, UnableToAddRelatedFortnum, FortnumRelation
 
 
 class FortnumCase(TestCase):
@@ -147,6 +147,33 @@ class FortnumCase(TestCase):
         self.assertIn(Chemicals.water, PhysicalStates.liquid.chemicals)
         self.assertIn(Chemicals.air, PhysicalStates.gas.chemicals)
         self.assertNotIn(Chemicals.water, PhysicalStates.gas.chemicals)
+
+    def test_fortnum_related_list_relation(self):
+        class Fruit(Fortnum):
+            persons = []
+            hated_by = []
+
+        class Fruits(Fortnum):
+            banana = Fruit("Banana")
+            apple = Fruit("Apple")
+            orange = Fruit("Orange")
+            kiwi = Fruit("Kiwi")
+
+        class Person(Fortnum):
+            related_name = "persons"
+
+        class John(Person):
+            favorite_fruits = FortnumRelation(Fruits.banana, Fruits.orange)
+            hated_fruits = FortnumRelation(Fruits.kiwi, related_name="hated_by")
+
+        class Jane(Person):
+            favorite_fruites = FortnumRelation(Fruits.apple, Fruits.orange)
+            hated_fruits = FortnumRelation(Fruits.kiwi, related_name="hated_by")
+
+        self.assertEqual(list(Fruits.orange.persons), [John, Jane])
+        self.assertEqual(list(Fruits.apple.persons), [Jane])
+        self.assertEqual(list(Fruits.kiwi.persons), [])
+        self.assertEqual(list(Fruits.kiwi.hated_by), [John, Jane])
 
     def test_unable_to_set_relation(self):
         class PhysicalState(Fortnum):
