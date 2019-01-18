@@ -16,25 +16,28 @@ A fortnum can be defined in two ways, either using class syntax which offers all
 .. literalinclude:: examples/introduction.py
     :lines: 4-5
 
-or as a simplified one liner for the simple cases
+or as a simple one-liner
 
 .. literalinclude:: examples/introduction.py
     :lines: 8
-
-The two ways are equivalent and which way is preferable depends on your preference and the complexity fortnum you are
-    defining.
-
 
 Fortnum makes it easy to define collections. All fortnums declared as class variables will automatically be registered
 as children, and a reference from the child to the parent will be added.
 
 .. literalinclude:: examples/introduction.py
-    :lines: 11-17
+    :lines: 11-18
+
+
+One fortnum can belong to more then one collection.
+
+.. literalinclude:: examples/introduction.py
+    :lines: 21-27
+
 
 The collections are ordered, and the ordering can be used to compare or sort the fortnums within the collection
 
 .. literalinclude:: examples/introduction.py
-    :lines: 20-27
+    :lines: 30-38
 
 
 
